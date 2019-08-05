@@ -1,0 +1,98 @@
+# Import the `pandas` library as `pd`
+import pandas as pd
+
+# Load in the data with `read_csv()`
+digits = pd.read_csv("http://archive.ics.uci.edu/ml/machine-learning-databases/optdigits/optdigits.tra",
+                     header=None)
+
+# Print out `digits`
+print(digits)
+iris.describe()
+
+# Inspect the first 5 rows of `digits`
+first = digits._____(5)
+
+# Inspect the last 5 rows
+last = digits.____(5)
+
+# Take a sample of 5
+digits.sample(5)
+
+# import `sample` from `random`
+from random import ______
+
+# Create a random index
+randomIndex = np.array(sample(range(len(______)), 5))
+
+# Get 5 random rows
+digitsSample = digits.ix[___________]
+
+# Print the sample
+print(____________)
+
+# Petal length greater than sepal length?
+iris.query('Petal_length > Sepal_length')
+
+# Petal length equals sepal length?
+iris.query('Petal_length == Sepal_length')
+
+# Identifiy missing values
+pd.isnull(______)
+
+# Factorize the values 
+labels,levels = pd.factorize(iris.Class)
+
+# Save the encoded variables in `iris.Class`
+iris.Class = labels
+
+# Print out the first rows
+iris.Class.head()
+
+# Define your own bins
+mybins = range(0, df.age.max(), 10)
+
+# Cut the data with the help of the bins
+df['age_bucket'] = pd.cut(df.age, bins=mybins)
+
+# Count the number of values per bucket
+df['age_bucket'].value_counts()
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler().fit(X)
+
+rescaledX = scaler.transform(X)
+
+# Import `RandomForestClassifier`
+from sklearn.ensemble import RandomForestClassifier
+
+# Isolate Data, class labels and column values
+X = iris.iloc[:,0:4]
+Y = iris.iloc[:,-1]
+names = iris.columns.values
+
+# Build the model
+rfc = RandomForestClassifier()
+
+# Fit the model
+rfc.fit(X, Y)
+
+# Print the results
+print("Features sorted by their score:")
+print(sorted(zip(map(lambda x: round(x, 4), rfc.feature_importances_), names), reverse=True))
+
+
+# Import `PCA` from `sklearn.decomposition`
+from sklearn.decomposition import ___
+
+# Build the model
+pca = PCA(n_components=2)
+
+# Reduce the data, output is ndarray
+reduced_data = pca.fit_transform(_______)
+
+# Inspect the shape of `reduced_data`
+reduced_data.______
+
+# print out the reduced data
+print(_______________)
