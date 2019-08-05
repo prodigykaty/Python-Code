@@ -10,16 +10,16 @@ print(digits)
 iris.describe()
 
 # Inspect the first 5 rows of `digits`
-first = digits._____(5)
+first = digits.head(5)
 
 # Inspect the last 5 rows
-last = digits.____(5)
+last = digits.tail(5)
 
 # Take a sample of 5
 digits.sample(5)
 
 # import `sample` from `random`
-from random import ______
+from random import sample
 
 # Create a random index
 randomIndex = np.array(sample(range(len(______)), 5))
