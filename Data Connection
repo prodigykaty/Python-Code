@@ -1,0 +1,162 @@
+###############################################################################
+###############USER DEFINED FUNCTION FOR USING PYTHON DATA CONNECTION##########
+###############################################################################
+
+import platform
+import pyodbc
+import pandas.io.sql as psql
+import jaydebeapi
+import pandas as pd
+import os, pwd
+import datetime
+from datetime import timedelta
+import numpy as np
+import time
+
+file=open("/opt/data/share01/kl528t/auth/upstart.txt","r")
+pw=file.read().splitlines()
+USERID = pwd.getpwuid(os.geteuid()).pw_name
+PWD=pw[0]
+
+
+jars=['/opt/data/share01/jdbc/vertica/vertica-jdbc.jar',
+    '/opt/data/share01/jdbc/teradata/terajdbc4.jar',
+    '/opt/data/share01/jdbc/teradata/tdgssconfig.jar',
+    '/opt/data/share01/jdbc/teradata/noarch-aster-jdbc-driver.jar']
+    
+#############Connect to Vertica###############
+def init_vertica():
+    vHost='blph1150.bhdc.att.com:5433'
+    Database_v='ADV'
+    jclassname_v='com.vertica.jdbc.Driver'
+    url_v='jdbc:vertica://'+vHost+'/'+Database_v
+    driver_args_v=[url_v,USERID,PWD]
+    conn_v = jaydebeapi.connect(jclassname_v,driver_args_v,jars)
+    return conn_v
+    
+#############Connect to Teradata###############
+def init_tera():
+    tHost="bhpm1.bhdc.att.com"
+    jclassname_tera='com.teradata.jdbc.TeraDriver'
+    url_tera='jdbc:teradata://'+tHost
+    driver_args_tera=[url_tera,USERID,PWD]
+    conn_tera = jaydebeapi.connect(jclassname_tera,driver_args_tera,jars) 
+    return conn_tera
+    
+#############Connect to Aster#####################
+def init_aster():
+    aHost='aster.it.att.com:2406'
+    jclassname_aster='com.asterdata.ncluster.Driver'
+    url_aster='jdbc:ncluster://'+aHost+'/'+'adwp'
+    driver_args_aster=[url_aster,USERID,PWD]
+    conn_aster = jaydebeapi.connect(jclassname_aster,driver_args_aster  ,jars) 
+    return conn_aster
+
+###########Pull data and converted it to Pandas data frame#################################
+def get_data_frame(query, dbase):
+    if dbase.upper()=='VERTICA': connect=init_vertica()
+    if dbase.upper()=='TERA': connect=init_tera()
+    if dbase.upper()=='ASTER': connect=init_aster()
+    
+    cur=connect.cursor()
+    run_query=cur.execute(query)
+    result=cur.fetchall()
+    col=[]
+    for item in cur.description:
+        col.append(item[0])
+    df = pd.DataFrame(result)
+    df.columns = col
+    
+    cur.close()
+    connect.close()
+    return df
+
+def run_query(query,dbase):
+    if dbase.upper()=='VERTICA': connect=init_vertica()
+    if dbase.upper()=='TERA': connect=init_tera()
+    if dbase.upper()=='ASTER': connect=init_aster()
+
+    cur=connect.cursor()
+    run_query=cur.execute(query)
+    
+    cur.close()
+    connect.close()
+    return run_query
+
+def drop_table(tablename,dbase):
+    run_query('DROP TABLE IF EXISTS {tablename}'.format(tablename=tablename), dbase)
+    return 
+    
+    
+import os
+import sys
+import time
+
+sys.path.append('/python/lib/py4j-0.8.2.1-src.zip')
+sys.path.append('/opt/app/python2.7/bin/python')
+
+import inspect
+
+os.environ['SPARK_HOME'] = '/usr/hdp/current/spark2-client'
+os.environ['SPARK_CONF_DIR'] = '/usr/hdp/current/spark2-client/conf'
+os.environ['SCALA_VERSION']='2.11'
+
+#2.2.1
+#2.4.0
+
+if "PYTHONPATH" in os.environ:
+    print("found")
+    os.environ['PYTHONPATH']=os.environ['SPARK_HOME']+"/python/"+":"+os.environ['SPARK_HOME']+"/python/lib/py4j-0.10.3-src.zip"+":"+os.environ['PYTHONPATH']+":/opt/app/python2.7/bin/python"
+    
+else:
+    print("not found")
+    os.environ['PYTHONPATH']=os.environ['SPARK_HOME']+"/python/"+":"+os.environ['SPARK_HOME']+"/python/lib/py4j-0.10.4-src.zip"
+
+os.environ['HADOOP_HOME']='/usr/hdp/current/hadoop-client'    
+os.environ['HADOOP_CONF_DIR']='/usr/hdp/current/hadoop-client/conf'
+os.environ['SPARK_YARN_APP_NAME']='RCLOUD_ON_SPARK'
+os.environ['PYTHON_SPARK']='/opt/app/python2.7/bin/python'
+os.environ['PYSPARK_PYTHON']='/opt/app/python2.7/bin/python'
+os.environ['PYSPARK_DRIVER_PYTHON']='/opt/app/python2.7/bin/python'
+os.environ['MASTER']='yarn'
+
+os.environ['PYSPARK_SUBMIT_ARGS']="--deploy-mode client \
+--jars /usr/hdp/current/sqoop-client/lib/terajdbc4.jar,/usr/hdp/current/sqoop-client/lib/tdgssconfig.jar,/opt/data/share01/jdbc/vertica/vertica-jdbc.jar \
+--conf spark.driver.extraClassPath=/usr/hdp/current/sqoop-client/lib/terajdbc4.jar,/usr/hdp/current/sqoop-client/lib/tdgssconfig.jar,/opt/data/share01/jdbc/vertica/vertica-jdbc.jar \
+--conf spark.executor.extraClassPath=/usr/hdp/current/sqoop-client/lib/terajdbc4.jar,/usr/hdp/current/sqoop-client/lib/tdgssconfig.jar,/opt/data/share01/jdbc/vertica/vertica-jdbc.jar \
+--keytab /opt/data/share01/kl528t/kl528t.keytab pyspark-shell \
+--verbose"
+
+from pyspark.sql import SparkSession
+from pyspark import SparkContext, SparkConf
+
+spark=SparkSession\
+.builder\
+    .config("spark.app.name", "SparkTest") \
+    .config("spark.master", "yarn") \
+    .config("spark.submit.deployMod", "client") \
+    .config("spark.app.name", "RCloud/PySpark") \
+    .config("spark.driver.memory", "64G") \
+    .config("spark.executor.instances", "4") \
+    .config("spark.executor.memory", "64G") \
+    .config("spark.executor.cores", "3") \
+    .config("spark.speculation", "true") \
+    .config("spark.dynamicAllocation.enabled", "true") \
+    .config("spark.shuffle.service.enabled", "true") \
+    .config("spark.dynamicAllocation.initialExecutors", "4") \
+    .config("spark.dynamicAllocation.minExecutors", "2") \
+    .config("spark.dynamicAllocation.maxExecutors", "6") \
+    .config("spark.driver.maxResultSize", "0") \
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+    .config("spark.kryoserializer.buffer.max", "1024m") \
+    .config("spark.kryoserializer.buffer", "64m") \
+    .enableHiveSupport() \
+    .getOrCreate()
+#SparkConf().getAll()  
+
+
+from pyspark.sql import SparkSession
+from pyspark import SparkContext, SparkConf
+spark=SparkSession.builder.enableHiveSupport().getOrCreate() 
+import time
+sys.path.append('/python/lib/py4j-0.8.2.1-src.zip')
