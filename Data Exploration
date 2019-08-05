@@ -1,98 +1,80 @@
 # Import the `pandas` library as `pd`
 import pandas as pd
 
-# Load in the data with `read_csv()`
-digits = pd.read_csv("http://archive.ics.uci.edu/ml/machine-learning-databases/optdigits/optdigits.tra",
-                     header=None)
+sales_data = pd.read_csv("../input/SalesKaggle3.csv")
+sales_data.head()
+sales_data.describe(include='all')
 
-# Print out `digits`
-print(digits)
-iris.describe()
+sales_data.describe(include='all')
+print(sales_data.nunique())
+print(sales_data[sales_data['File_Type'] == 'Historical']['SKU_number'].count())
+print(sales_data[sales_data['File_Type'] == 'Active']['SKU_number'].count())
 
-# Inspect the first 5 rows of `digits`
-first = digits.head(5)
+sales_data_hist = sales_data[sales_data['File_Type'] == 'Historical']
+sales_data_act = sales_data[sales_data['File_Type'] == 'Active']
+sales_data['MarketingType'].value_counts().plot.bar(title="Freq dist of Marketing Type")
 
-# Inspect the last 5 rows
-last = digits.tail(5)
+col_names = ['StrengthFactor','PriceReg', 'ReleaseYear', 'ItemCount', 'LowUserPrice', 'LowNetPrice']
 
-# Take a sample of 5
-digits.sample(5)
+fig, ax = plt.subplots(len(col_names), figsize=(16,12))
 
-# import `sample` from `random`
-from random import sample
+for i, col_val in enumerate(col_names):
 
-# Create a random index
-randomIndex = np.array(sample(range(len(______)), 5))
+    sns.distplot(sales_data_hist[col_val], hist=True, ax=ax[i])
+    ax[i].set_title('Freq dist '+col_val, fontsize=10)
+    ax[i].set_xlabel(col_val, fontsize=8)
+    ax[i].set_ylabel('Count', fontsize=8)
 
-# Get 5 random rows
-digitsSample = digits.ix[___________]
+plt.show()
 
-# Print the sample
-print(____________)
+sales_data_hist = sales_data_hist.drop([
+      'Order', 'File_Type','SKU_number','SoldFlag','MarketingType','ReleaseNumber','New_Release_Flag'
+], axis=1)
+sns.pairplot(sales_data_hist)
 
-# Petal length greater than sepal length?
-iris.query('Petal_length > Sepal_length')
-
-# Petal length equals sepal length?
-iris.query('Petal_length == Sepal_length')
-
-# Identifiy missing values
-pd.isnull(______)
-
-# Factorize the values 
-labels,levels = pd.factorize(iris.Class)
-
-# Save the encoded variables in `iris.Class`
-iris.Class = labels
-
-# Print out the first rows
-iris.Class.head()
-
-# Define your own bins
-mybins = range(0, df.age.max(), 10)
-
-# Cut the data with the help of the bins
-df['age_bucket'] = pd.cut(df.age, bins=mybins)
-
-# Count the number of values per bucket
-df['age_bucket'].value_counts()
-
-from sklearn.preprocessing import StandardScaler
-
-scaler = StandardScaler().fit(X)
-
-rescaledX = scaler.transform(X)
-
-# Import `RandomForestClassifier`
-from sklearn.ensemble import RandomForestClassifier
-
-# Isolate Data, class labels and column values
-X = iris.iloc[:,0:4]
-Y = iris.iloc[:,-1]
-names = iris.columns.values
-
-# Build the model
-rfc = RandomForestClassifier()
-
-# Fit the model
-rfc.fit(X, Y)
-
-# Print the results
-print("Features sorted by their score:")
-print(sorted(zip(map(lambda x: round(x, 4), rfc.feature_importances_), names), reverse=True))
+data_frame.isnull().values.any()
+data_frame.isnull().sum()
+data_frame['col_name'].fillna(0, inplace=True)
 
 
-# Import `PCA` from `sklearn.decomposition`
-from sklearn.decomposition import ___
+col_names = ['StrengthFactor','PriceReg', 'ReleaseYear', 'ItemCount', 'LowUserPrice', 'LowNetPrice']
 
-# Build the model
-pca = PCA(n_components=2)
+fig, ax = plt.subplots(len(col_names), figsize=(8,40))
 
-# Reduce the data, output is ndarray
-reduced_data = pca.fit_transform(_______)
+for i, col_val in enumerate(col_names):
 
-# Inspect the shape of `reduced_data`
-reduced_data.______
+    sns.boxplot(y=sales_data_hist[col_val], ax=ax[i])
+    ax[i].set_title('Box plot - {}'.format(col_val), fontsize=10)
+    ax[i].set_xlabel(col_val, fontsize=8)
 
-# print out the reduced data
-print(_______________)
+plt.show()
+
+def percentile_based_outlier(data, threshold=95):
+    diff = (100 - threshold) / 2
+    minval, maxval = np.percentile(data, [diff, 100 - diff])
+    return (data < minval) | (data > maxval)
+
+col_names = ['StrengthFactor','PriceReg', 'ReleaseYear', 'ItemCount', 'LowUserPrice', 'LowNetPrice']
+
+fig, ax = plt.subplots(len(col_names), figsize=(8,40))
+
+for i, col_val in enumerate(col_names):
+    x = sales_data_hist[col_val][:1000]
+    sns.distplot(x, ax=ax[i], rug=True, hist=False)
+    outliers = x[percentile_based_outlier(x)]
+    ax[i].plot(outliers, np.zeros_like(outliers), 'ro', clip_on=False)
+
+    ax[i].set_title('Outlier detection - {}'.format(col_val), fontsize=10)
+    ax[i].set_xlabel(col_val, fontsize=8)
+
+plt.show()
+
+f, ax = plt.subplots(figsize=(10, 8))
+corr = sales_data_hist.corr()
+sns.heatmap(corr,
+            xticklabels=corr.columns.values,
+            yticklabels=corr.columns.values)
+            
+            
+            
+            
