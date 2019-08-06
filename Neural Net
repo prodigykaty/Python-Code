@@ -1,0 +1,78 @@
+#neural net work
+import sklearn
+from sklearn.model_selection  import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+
+tenure=5
+pull_data(tenure)
+clean_data(data0,data1,tenure,1)
+pre_process_data(mdf0,1)
+
+predictors = ['speed', 'prd_grp_cd','int_att_fiber_ind','bill_type','auto_pmt_ind','Tech_cat','flag_channel_call','flag_channel_indirect','flag_channel_call_uverse','flag_channel_retail','flag_channel_online','flag_channel_mobile', 'cnt_compt','comp_charter','comp_cox','comp_comcast','flag_Central','flag_East','flag_West','dtv_flag','wirls_flag','iptv_flag','voip_flag','cterm12','flag_income_75_100','flag_income_100_125','flag_income_125_150','flag_income_150','dwlng_type_group','flag_AA','flag_Asian','flag_Hispanic','flag_max_comp_speed','hsld_chld_cnt','flag_risk_low','flag_risk_medium','flag_risk_high','ind_access','dma_cd_group','unlimited', 'BB_only']
+
+
+X=mdf0[predictors]     
+y=mdf0['bb_churn']
+
+# limit to categorical data using df.select_dtypes()
+cat_vars = X.select_dtypes(include=[object])
+df_processed = pd.get_dummies(X, prefix_sep="_", columns=cat_vars.columns) 
+ga_process=pd.get_dummies(mdf_grossadd0[predictors], prefix_sep="_", columns=cat_vars.columns) 
+
+def hot_encode():
+    from sklearn import preprocessing
+    le = preprocessing.LabelEncoder()
+    X_2 = X.apply(le.fit_transform)
+    X_2.head(10)
+    enc = preprocessing.OneHotEncoder()
+    
+    # 2. FIT
+    enc.fit(X_2)
+    
+    # 3. Transform
+    onehotlabels = enc.transform(X_2).toarray()
+    onehotlabels.shape
+    
+    return None
+
+X_train, X_test, y_train, y_test = train_test_split(df_processed, y, test_size=0.2, random_state=42)
+
+
+#standardizing the input feature
+from sklearn.preprocessing import StandardScaler
+sc = StandardScaler()
+
+from keras import Sequential
+from keras.layers import Dense
+
+classifier = Sequential()
+#First Hidden Layer
+classifier.add(Dense(64, activation='relu', kernel_initializer='random_normal', input_dim=X_train.shape[1]))
+#Second  Hidden Layer
+classifier.add(Dense(64, activation='relu', kernel_initializer='random_normal'))
+#Output Layer
+classifier.add(Dense(1, activation='sigmoid', kernel_initializer='random_normal'))
+
+import tensorflow as tf
+from sklearn.metrics import roc_auc_score
+
+def auroc(y_true, y_pred):
+    return tf.py_func(roc_auc_score, (y_true, y_pred), tf.double)
+    
+    
+import time
+start_time = time.time()
+#Compiling the neural network
+classifier.compile(optimizer ='adam',loss='binary_crossentropy', metrics =['accuracy',auroc])
+#Fitting the data to the training dataset
+history=classifier.fit(X_train,y_train, batch_size=10000, epochs=150, validation_split=0.1, verbose=0)
+print("--- %s mins ---" , (time.time() - start_time)/60)
+plt.plot(history.history['acc'])
+plt.plot(history.history['loss'])
+
+
+
+    
+
+
