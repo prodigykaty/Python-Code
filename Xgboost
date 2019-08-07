@@ -118,3 +118,51 @@ xgb1 = XGBRegressor(
  nthread=4,
  scale_pos_weight=1,
  seed=27) 
+
+############################################################################################
+############################################################################################
+from xgboost import XGBRegressor, plot_importance 
+
+
+xgb1 = XGBRegressor(learning_rate =0.01, n_estimators=1000, max_depth=5, min_child_weight=200, gamma=0.0001, subsample=0.8, colsample_bytree=0.8, objective= 'binary:logistic',  nthread=4, scale_pos_weight=1, seed=27)
+
+from matplotlib import pyplot
+
+def modelfit(alg, X_train,y_train,X_test,y_test, predictors,useTrainCV=False, cv_folds=5, early_stopping_rounds=10):
+    
+    global dga_predictions
+    global pred_bb_series
+    global pred_bb
+    global dtrain_predictions
+    
+    if useTrainCV:
+        xgb_param = alg.get_xgb_params()
+        xgtrain = xgb.DMatrix(X_train.values, label=y_train)
+        cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=alg.get_params()['n_estimators'], nfold=cv_folds,
+            metrics='auc', early_stopping_rounds=early_stopping_rounds)
+        alg.set_params(n_estimators=cvresult.shape[0])
+    
+    #Fit the algorithm on the data
+    alg.fit(X_train, y_train,eval_metric='auc')
+        
+    #Predict training set:
+    dtrain_predictions = alg.predict(X_train)
+    dtest_predictions = alg.predict(X_test)
+    dga_predictions = alg.predict(ga_process)
+    pred_bb_series = pd.Series(dga_predictions)
+    pred_bb_series.name="p_{}".format(tenure)
+    pred_bb=ga_process.merge(pred_bb_series, how='left', left_index=True, right_index=True)
+    #dtrain_predprob = alg.predict_proba(X_train[predictors])[:,1]
+        
+    #Print model report:
+    print ("\nvModel Report")
+   # print ("Accuracy : %.4g" % metrics.accuracy_score(y_train, dtrain_predictions))
+    print ("AUC Score (Train): %f" % roc_auc_score(y_train, dtrain_predictions))
+    print ("AUC Score (Test): %f" % roc_auc_score(y_test, dtest_predictions))
+    
+    plot_importance(alg,max_num_features=20)
+    pyplot.show()
+    
+#Choose all predictors 
+predictors = X_train.columns    
+modelfit(xgb1, X_train,y_train, X_test,y_test,predictors,useTrainCV=False, cv_folds=5, early_stopping_rounds=10)
